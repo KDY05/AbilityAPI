@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    compileOnly(project(":ability-api"))
+    compileOnly(project(":"))
     compileOnly("io.papermc.paper:paper-api:26.1.2.build.+")
     compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 }

@@ -1,2 +1,2 @@
 install:
-  - ./gradlew :ability-api:publishToMavenLocal
+  - ./gradlew publishToMavenLocal
