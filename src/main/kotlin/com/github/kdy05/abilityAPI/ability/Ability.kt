@@ -10,6 +10,7 @@ abstract class Ability(
 ) {
     abstract fun skills(): List<Skill>
 
-    fun start() = skills().forEach { it.onStart() }
-    fun stop()  = skills().forEach { it.onStop()  }
+    fun start()             = skills().forEach { it.onStart() }
+    fun startWithCooldown() = skills().forEach { it.onStartWithCooldown() }
+    fun stop()              = skills().forEach { it.onStop() }
 }

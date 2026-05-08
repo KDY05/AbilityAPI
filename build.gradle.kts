@@ -1,6 +1,8 @@
+import com.vanniktech.maven.publish.SonatypeHost
+
 plugins {
     kotlin("jvm") version "2.3.21"
-    `maven-publish`
+    id("com.vanniktech.maven.publish") version "0.29.0"
 }
 
 repositories {
@@ -17,10 +19,35 @@ kotlin {
     jvmToolchain(25)
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
+mavenPublishing {
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    signAllPublications()
+
+    coordinates(group.toString(), "ability-api", version.toString())
+
+    pom {
+        name = "AbilityAPI"
+        description = "Minecraft Paper plugin API for ability and skill management"
+        url = "https://github.com/kdy05/AbilityAPI"
+
+        licenses {
+            license {
+                name = "GNU General Public License v3.0"
+                url = "https://www.gnu.org/licenses/gpl-3.0.html"
+            }
+        }
+
+        developers {
+            developer {
+                id = "kdy05"
+                name = "kdy05"
+            }
+        }
+
+        scm {
+            connection = "scm:git:git://github.com/kdy05/AbilityAPI.git"
+            developerConnection = "scm:git:ssh://github.com/kdy05/AbilityAPI.git"
+            url = "https://github.com/kdy05/AbilityAPI"
         }
     }
 }

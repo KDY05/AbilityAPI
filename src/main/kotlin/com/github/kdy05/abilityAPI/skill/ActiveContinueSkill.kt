@@ -73,6 +73,21 @@ abstract class ActiveContinueSkill(
 
     override fun onStart() = register()
 
+    override fun onStartWithCooldown() {
+        register()
+        state = State.COOLDOWN
+        cooldownSecondsLeft = (cooldownTicks / 20L).toInt()
+        cooldownRunningToken = context.scheduleRepeat(20L) {
+            if (cooldownSecondsLeft > 0) onCooldownRunning(cooldownSecondsLeft--)
+        }
+        cooldownToken = context.scheduleOnce(cooldownTicks) {
+            cooldownRunningToken?.let { context.cancelSchedule(it) }
+            cooldownRunningToken = null
+            state = State.READY
+            onCooldownEnd()
+        }
+    }
+
     override fun onStop() {
         durationToken?.let { context.cancelSchedule(it) }
         cooldownToken?.let { context.cancelSchedule(it) }
