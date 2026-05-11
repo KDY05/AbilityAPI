@@ -2,7 +2,7 @@ import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
     kotlin("jvm") version "2.3.21"
-    id("com.vanniktech.maven.publish") version "0.29.0"
+    id("com.vanniktech.maven.publish") version "0.36.0"
 }
 
 repositories {
@@ -35,7 +35,7 @@ mavenPublishing {
         licenses {
             license {
                 name = "GNU General Public License v3.0"
-                url = "https://www.gnu.org/licenses/gpl-3.0.html"
+                url = "https://www.gnu.org/licenses/gpl-3.0.txt"
             }
         }
 
