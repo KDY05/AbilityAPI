@@ -21,7 +21,9 @@ kotlin {
 
 mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
-    signAllPublications()
+    if (project.hasProperty("signing.keyId")) {
+        signAllPublications()
+    }
 
     coordinates(group.toString(), "ability-api", version.toString())
 

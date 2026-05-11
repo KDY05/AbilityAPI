@@ -3,54 +3,60 @@ package io.github.kdy05.abilityAPI.skill
 import io.github.kdy05.abilityAPI.event.SkillActivateEvent
 import org.bukkit.entity.Player
 
-abstract class ActiveSkill(
+abstract class StackableActiveSkill(
     owner: Player,
     context: SkillContext,
 ) : CooldownSkillBase(owner, context) {
 
-    enum class State { READY, COOLDOWN }
-
-    var state = State.READY
-        private set
+    abstract val maxStacks: Int
 
     abstract fun onActivate()
 
     open fun onSilenceAttempt() {}
-    open fun onCooldownAttempt(remainingSeconds: Int) {}
-    open fun onCooldownEnd() {}
+    open fun onStackEmptyAttempt() {}
+    open fun onStackGained(currentStacks: Int) {}
+
+    var stacks: Int = 0
+        private set
+
+    private fun startRecharge() {
+        beginCooldown {
+            stacks++
+            onStackGained(stacks)
+            if (stacks < maxStacks) startRecharge()
+        }
+    }
 
     fun activate() {
         if (context.isSilenced(owner)) {
             onSilenceAttempt()
             return
         }
-        if (state == State.COOLDOWN) {
-            onCooldownAttempt(cooldownSecondsLeft)
+        if (stacks == 0) {
+            onStackEmptyAttempt()
             return
         }
         if (context.callEvent(SkillActivateEvent(owner, this)).isCancelled) return
-        state = State.COOLDOWN
+        val wasAtMax = stacks == maxStacks
+        stacks--
         onActivate()
-        beginCooldown {
-            state = State.READY
-            onCooldownEnd()
-        }
+        if (wasAtMax) startRecharge()
     }
 
-    override fun onStart() = register()
+    override fun onStart() {
+        register()
+        stacks = maxStacks
+    }
 
     override fun onStartWithCooldown() {
         register()
-        state = State.COOLDOWN
-        beginCooldown {
-            state = State.READY
-            onCooldownEnd()
-        }
+        stacks = 0
+        startRecharge()
     }
 
     override fun onStop() {
         cancelCooldownTimers()
         unsubscribeAll()
-        state = State.READY
+        stacks = 0
     }
 }

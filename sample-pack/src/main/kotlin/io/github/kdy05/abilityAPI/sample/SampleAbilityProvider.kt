@@ -6,6 +6,7 @@ import io.github.kdy05.abilityAPI.sample.abilities.BlockBombAbility
 import io.github.kdy05.abilityAPI.sample.abilities.DashAbility
 import io.github.kdy05.abilityAPI.sample.abilities.InvisibilityAbility
 import io.github.kdy05.abilityAPI.sample.abilities.SpeedBoostAbility
+import io.github.kdy05.abilityAPI.sample.abilities.StackTestAbility
 import kotlin.reflect.KClass
 
 class SampleAbilityProvider : AbilityProvider {
@@ -15,5 +16,6 @@ class SampleAbilityProvider : AbilityProvider {
         DashAbility::class,
         InvisibilityAbility::class,
         BlockBombAbility::class,
+        StackTestAbility::class,
     )
 }

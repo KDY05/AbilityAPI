@@ -6,7 +6,7 @@ import org.bukkit.entity.Player
 abstract class ActiveContinueSkill(
     owner: Player,
     context: SkillContext,
-) : SkillBase(owner, context) {
+) : CooldownSkillBase(owner, context) {
 
     enum class State { READY, ACTIVE, COOLDOWN }
 
@@ -14,7 +14,6 @@ abstract class ActiveContinueSkill(
         private set
 
     abstract val durationTicks: Long
-    abstract val cooldownTicks: Long
 
     abstract fun onActivate()
     abstract fun onDeactivate()
@@ -24,15 +23,11 @@ abstract class ActiveContinueSkill(
     open fun onActiveRunning(remainingSeconds: Int) {}
     open fun onActiveEnd() {}
     open fun onCooldownAttempt(remainingSeconds: Int) {}
-    open fun onCooldownRunning(remainingSeconds: Int) {}
     open fun onCooldownEnd() {}
 
     private var activeSecondsLeft = 0
-    private var cooldownSecondsLeft = 0
     private var durationToken: Any? = null
-    private var cooldownToken: Any? = null
     private var activeRunningToken: Any? = null
-    private var cooldownRunningToken: Any? = null
 
     fun activate() {
         if (context.isSilenced(owner)) {
@@ -54,15 +49,9 @@ abstract class ActiveContinueSkill(
                     activeRunningToken?.let { context.cancelSchedule(it) }
                     activeRunningToken = null
                     state = State.COOLDOWN
-                    cooldownSecondsLeft = (cooldownTicks / 20L).toInt()
                     onDeactivate()
                     onActiveEnd()
-                    cooldownRunningToken = context.scheduleRepeat(20L) {
-                        if (cooldownSecondsLeft > 0) onCooldownRunning(cooldownSecondsLeft--)
-                    }
-                    cooldownToken = context.scheduleOnce(cooldownTicks) {
-                        cooldownRunningToken?.let { context.cancelSchedule(it) }
-                        cooldownRunningToken = null
+                    beginCooldown {
                         state = State.READY
                         onCooldownEnd()
                     }
@@ -76,13 +65,7 @@ abstract class ActiveContinueSkill(
     override fun onStartWithCooldown() {
         register()
         state = State.COOLDOWN
-        cooldownSecondsLeft = (cooldownTicks / 20L).toInt()
-        cooldownRunningToken = context.scheduleRepeat(20L) {
-            if (cooldownSecondsLeft > 0) onCooldownRunning(cooldownSecondsLeft--)
-        }
-        cooldownToken = context.scheduleOnce(cooldownTicks) {
-            cooldownRunningToken?.let { context.cancelSchedule(it) }
-            cooldownRunningToken = null
+        beginCooldown {
             state = State.READY
             onCooldownEnd()
         }
@@ -90,13 +73,10 @@ abstract class ActiveContinueSkill(
 
     override fun onStop() {
         durationToken?.let { context.cancelSchedule(it) }
-        cooldownToken?.let { context.cancelSchedule(it) }
         activeRunningToken?.let { context.cancelSchedule(it) }
-        cooldownRunningToken?.let { context.cancelSchedule(it) }
         durationToken = null
-        cooldownToken = null
         activeRunningToken = null
-        cooldownRunningToken = null
+        cancelCooldownTimers()
         if (state == State.ACTIVE) onDeactivate()
         unsubscribeAll()
         state = State.READY

@@ -4,6 +4,7 @@ import io.github.kdy05.abilityAPI.ability.Ability
 import io.github.kdy05.abilityAPI.skill.ActiveContinueSkill
 import io.github.kdy05.abilityAPI.skill.ActiveSkill
 import io.github.kdy05.abilityAPI.skill.SkillContext
+import io.github.kdy05.abilityAPI.skill.StackableActiveSkill
 import org.bukkit.entity.Player
 
 abstract class SimpleAbility(owner: Player, context: SkillContext) : Ability(owner, context) {
@@ -38,6 +39,21 @@ abstract class SimpleAbility(owner: Player, context: SkillContext) : Ability(own
         }
         override fun onCooldownEnd() {
             owner.sendMessage("§a쿨다운이 종료되었습니다!")
+        }
+    }
+
+    abstract inner class SimpleStackableActiveSkill : StackableActiveSkill(owner, context) {
+        override fun onSilenceAttempt() {
+            owner.sendMessage("§c침묵 상태입니다!")
+        }
+        override fun onStackEmptyAttempt() {
+            owner.sendMessage("§c스택이 없습니다! §f(충전 중...)")
+        }
+        override fun onStackGained(currentStacks: Int) {
+            owner.sendMessage("§b스택 충전! §f($currentStacks/$maxStacks)")
+        }
+        override fun onCooldownRunning(remainingSeconds: Int) {
+            if (remainingSeconds <= 3) owner.sendMessage("§e충전까지 §f${remainingSeconds}§e초...")
         }
     }
 }
