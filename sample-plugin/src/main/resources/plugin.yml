@@ -1,0 +1,6 @@
+name: AbilityAPI-SamplePlugin
+version: '1.0.0'
+main: io.github.kdy05.abilityAPI.sample.plugin.SamplePlugin
+api-version: '1.21'
+depend: [AbilityAPI]
+authors: [ kdy05 ]
