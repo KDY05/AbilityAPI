@@ -18,13 +18,16 @@ import org.bukkit.event.block.BlockBreakEvent
 )
 class BlockBombAbility(owner: Player, context: SkillContext) : SimpleAbility(owner, context) {
 
+    private val tntType: EntityType = listOf("TNT", "PRIMED_TNT")
+        .firstNotNullOf { name -> runCatching { EntityType::class.java.getField(name).get(null) as? EntityType }.getOrNull() }
+
     private val bombSkill = object : PassiveSkill(owner, context) {
         override fun register() {
             on(BlockBreakEvent::class) { e ->
                 if (e.player != owner) return@on
                 val tnt = e.block.world.spawnEntity(
                     e.block.location.add(0.5, 0.0, 0.5),
-                    EntityType.TNT
+                    tntType
                 ) as TNTPrimed
                 tnt.fuseTicks = 40
             }

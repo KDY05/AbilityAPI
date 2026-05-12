@@ -2,6 +2,7 @@ package io.github.kdy05.abilityAPI.skill
 
 import org.bukkit.entity.Player
 import org.bukkit.event.Event
+import org.bukkit.event.block.Action
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import kotlin.reflect.KClass
@@ -19,12 +20,12 @@ abstract class SkillBase(
 
     fun onLeftClick(handler: (PlayerInteractEvent) -> Unit) =
         on(PlayerInteractEvent::class) { e ->
-            if (e.player == owner && e.action.isLeftClick) handler(e)
+            if (e.player == owner && (e.action == Action.LEFT_CLICK_AIR || e.action == Action.LEFT_CLICK_BLOCK)) handler(e)
         }
 
     fun onRightClick(handler: (PlayerInteractEvent) -> Unit) =
         on(PlayerInteractEvent::class) { e ->
-            if (e.player == owner && e.action.isRightClick) handler(e)
+            if (e.player == owner && (e.action == Action.RIGHT_CLICK_AIR || e.action == Action.RIGHT_CLICK_BLOCK)) handler(e)
         }
 
     fun onEntityDamage(handler: (EntityDamageByEntityEvent) -> Unit) =

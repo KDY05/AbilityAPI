@@ -6,10 +6,10 @@ import io.github.kdy05.abilityAPI.sample.SimpleAbility
 import io.github.kdy05.abilityAPI.skill.PassiveSkill
 import io.github.kdy05.abilityAPI.skill.Skill
 import io.github.kdy05.abilityAPI.skill.SkillContext
-import org.bukkit.NamespacedKey
 import org.bukkit.attribute.Attribute
 import org.bukkit.attribute.AttributeModifier
 import org.bukkit.entity.Player
+import java.util.UUID
 
 @AbilityMeta(
     name = "질주",
@@ -19,15 +19,16 @@ import org.bukkit.entity.Player
 class SpeedBoostAbility(owner: Player, context: SkillContext) : SimpleAbility(owner, context) {
 
     private val speedSkill = object : PassiveSkill(owner, context) {
-        private val modifierKey = NamespacedKey.fromString("abilityapi:speed_boost")!!
-        private val modifier = AttributeModifier(modifierKey, 0.06, AttributeModifier.Operation.ADD_NUMBER)
+        private val movementSpeed: Attribute = listOf("GENERIC_MOVEMENT_SPEED", "MOVEMENT_SPEED")
+            .firstNotNullOf { name -> runCatching { Attribute::class.java.getField(name).get(null) as? Attribute }.getOrNull() }
+        private val modifier = AttributeModifier(UUID.randomUUID(), "speed_boost", 0.06, AttributeModifier.Operation.ADD_NUMBER)
 
         override fun register() {
-            owner.getAttribute(Attribute.MOVEMENT_SPEED)?.addModifier(modifier)
+            owner.getAttribute(movementSpeed)?.addModifier(modifier)
         }
 
         override fun onStop() {
-            owner.getAttribute(Attribute.MOVEMENT_SPEED)?.removeModifier(modifier)
+            owner.getAttribute(movementSpeed)?.removeModifier(modifier)
             super.onStop()
         }
     }
