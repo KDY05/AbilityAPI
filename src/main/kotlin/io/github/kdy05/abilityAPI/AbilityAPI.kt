@@ -1,6 +1,6 @@
 package io.github.kdy05.abilityAPI
 
-object AbilityPlugin {
+object AbilityAPI {
     private var _service: AbilityService? = null
 
     val service: AbilityService

@@ -5,11 +5,13 @@
 ## Contents
 
 - [Project Setup](#project-setup)
-- [AbilityPlugin.service 접근](#abilitypluginservice-접근)
+- [AbilityAPI.service 접근](#abilityapiservice-접근)
 - [능력 등록](#능력-등록)
+- [능력 목록 조회](#능력-목록-조회)
 - [능력 배분 (게임 시작)](#능력-배분-게임-시작)
 - [능력 개별 제어](#능력-개별-제어)
 - [플레이어 조회](#플레이어-조회)
+- [쿨타임 제어](#쿨타임-제어)
 - [damageGuard](#damageguard)
 - [silencePlayer](#silenceplayer)
 - [이벤트 수신](#이벤트-수신)
@@ -38,21 +40,21 @@ name: MyGame
 version: '1.0.0'
 main: com.example.mygame.MyGame
 api-version: '1.16'
-depend: [AbilityAPI]   # 반드시 포함 — AbilityPlugin.service 초기화 순서 보장
+depend: [AbilityAPI]   # 반드시 포함 — AbilityAPI.service 초기화 순서 보장
 ```
 
 ---
 
-## AbilityPlugin.service 접근
+## AbilityAPI.service 접근
 
-`AbilityPlugin.service`는 AbilityAPI 플러그인이 `onEnable()`을 완료한 뒤에만 유효합니다. `depend: [AbilityAPI]`가 선언된 플러그인의 `onEnable()` 시점에서는 항상 사용 가능합니다.
+`AbilityAPI.service`는 AbilityAPI 플러그인이 `onEnable()`을 완료한 뒤에만 유효합니다. `depend: [AbilityAPI]`가 선언된 플러그인의 `onEnable()` 시점에서는 항상 사용 가능합니다.
 
 ```kotlin
-import io.github.kdy05.abilityAPI.AbilityPlugin
+import io.github.kdy05.abilityAPI.AbilityAPI
 
 class MyGame : JavaPlugin() {
     override fun onEnable() {
-        val service = AbilityPlugin.service  // depend 보장으로 항상 안전
+        val service = AbilityAPI.service  // depend 보장으로 항상 안전
     }
 }
 ```
@@ -66,14 +68,14 @@ class MyGame : JavaPlugin() {
 `onEnable()`에서 게임 플러그인이 직접 제공하는 능력 클래스를 등록합니다. 능력 팩(외부 JAR)의 능력은 AbilityAPI가 자동으로 로드하므로 별도 등록 불필요.
 
 ```kotlin
-import io.github.kdy05.abilityAPI.AbilityPlugin
+import io.github.kdy05.abilityAPI.AbilityAPI
 import com.example.mygame.abilities.FireAbility
 import com.example.mygame.abilities.IceAbility
 
 override fun onEnable() {
-    AbilityPlugin.service.registrar.register(
-        FireAbility::class,
-        IceAbility::class,
+    AbilityAPI.service.registrar.register(
+        FireAbility::class.java,
+        IceAbility::class.java,
     )
 }
 ```
@@ -82,6 +84,43 @@ override fun onEnable() {
 - `@AbilityMeta` 없는 클래스 등록 시 즉시 예외 발생.
 - 동일 이름 중복 등록은 경고 로그 후 무시.
 - 게임 플러그인이 등록한 능력은 `/abilityapi reload`로 제거되지 않음 (팩 능력만 재로드).
+
+---
+
+## 능력 목록 조회
+
+`registrar`를 통해 등록된 능력 타입 전체를 조회할 수 있습니다.
+
+```kotlin
+val registrar = AbilityAPI.service.registrar
+
+// 등록된 모든 능력 타입
+val all: List<Class<out Ability>> = registrar.getAll()
+
+// @AbilityMeta.name 기준 조회 (대소문자 무시)
+val type: Class<out Ability>? = registrar.getByName("화염")
+
+// 등록된 능력 수
+val count: Int = registrar.getCount()
+```
+
+**활용 예시 — 능력 목록 출력:**
+
+```kotlin
+registrar.getAll()
+    .mapNotNull { it.getAnnotation(AbilityMeta::class.java) }
+    .forEach { meta -> player.sendMessage("[${meta.rank}] ${meta.name}") }
+```
+
+**활용 예시 — 이름으로 능력 부여:**
+
+```kotlin
+fun giveByName(player: Player, name: String) {
+    val type = AbilityAPI.service.registrar.getByName(name)
+        ?: return player.sendMessage("존재하지 않는 능력입니다.")
+    AbilityAPI.service.giveAbility(player, type)
+}
+```
 
 ---
 
@@ -101,8 +140,8 @@ distributeAbilities()       계획 확정 + 전원 인스턴스 생성 및 시�
 
 ```kotlin
 // 반환값: 각 플레이어에게 배정 예정인 능력 타입 Map (UI 표시 등에 활용)
-val preview: Map<Player, KClass<out Ability>> =
-    AbilityPlugin.service.previewAbilities(players)
+val preview: Map<Player, Class<out Ability>> =
+    AbilityAPI.service.previewAbilities(players)
 ```
 
 **동작:**
@@ -115,8 +154,8 @@ val preview: Map<Player, KClass<out Ability>> =
 
 ```kotlin
 // 반환값: 새로 배정된 능력 타입 (UI 업데이트에 활용)
-val newType: KClass<out Ability> =
-    AbilityPlugin.service.reassignAbility(player)
+val newType: Class<out Ability> =
+    AbilityAPI.service.reassignAbility(player)
 ```
 
 **동작:**
@@ -129,7 +168,7 @@ val newType: KClass<out Ability> =
 ### distributeAbilities
 
 ```kotlin
-AbilityPlugin.service.distributeAbilities()
+AbilityAPI.service.distributeAbilities()
 // 이후 pendingMap, reservePool 초기화됨
 ```
 
@@ -144,13 +183,13 @@ AbilityPlugin.service.distributeAbilities()
 배분 흐름 외에 개별 플레이어에게 직접 능력을 제어합니다.
 
 ```kotlin
-val service = AbilityPlugin.service
+val service = AbilityAPI.service
 
 // 능력 부여 — 인스턴스 생성 후 즉시 start() (쿨다운 없이 READY 상태로 시작)
-service.giveAbility(player, FireAbility::class)
+service.giveAbility(player, FireAbility::class.java)
 
 // 특정 타입의 능력 제거 — 해당 타입 인스턴스 전부 stop() 후 제거
-service.removeAbility(player, FireAbility::class)
+service.removeAbility(player, FireAbility::class.java)
 
 // 모든 능력 제거 + 재입장 시 복원 데이터도 삭제 (게임 완전 종료 시)
 service.clearAbilities(player)
@@ -169,7 +208,7 @@ service.clearAbilities(player)
 ## 플레이어 조회
 
 ```kotlin
-val service = AbilityPlugin.service
+val service = AbilityAPI.service
 
 // 플레이어가 보유한 모든 능력 인스턴스
 val abilities: List<Ability> = service.getAbilities(player)
@@ -178,10 +217,41 @@ val abilities: List<Ability> = service.getAbilities(player)
 val primary: Ability? = service.getPrimaryAbility(player)
 
 // 특정 타입 보유 여부
-val has: Boolean = service.hasAbility(player, FireAbility::class)
+val has: Boolean = service.hasAbility(player, FireAbility::class.java)
 
 // 특정 능력을 보유한 온라인 플레이어 목록
-val players: List<Player> = service.getAbilityPlayers(FireAbility::class)
+val players: List<Player> = service.getAbilityPlayers(FireAbility::class.java)
+```
+
+---
+
+## 쿨타임 제어
+
+### 서비스 레벨 — 전체 초기화
+
+`resetAllCooldowns(player)`는 해당 플레이어의 모든 `CooldownSkillBase` 계열 스킬(`ActiveSkill`, `ActiveContinueSkill`, `StackableActiveSkill`)의 쿨타임을 즉시 초기화합니다.
+
+```kotlin
+// 플레이어의 모든 스킬 쿨타임 초기화 (예: 관리자 명령어 /tc <player>)
+AbilityAPI.service.resetAllCooldowns(player)
+```
+
+각 스킬의 `onCooldownEnd()`가 호출되어 READY 상태로 전환됩니다.
+
+### 스킬 레벨 — 개별 초기화
+
+특정 스킬만 초기화하거나 남은 쿨타임을 조회할 때는 스킬 인스턴스에 직접 접근합니다.
+
+```kotlin
+import io.github.kdy05.abilityAPI.skill.CooldownSkillBase
+
+AbilityAPI.service.getAbilities(player)
+    .flatMap { it.skills() }
+    .filterIsInstance<CooldownSkillBase>()
+    .forEach { skill ->
+        val remaining = skill.getRemainingTicks()  // 남은 틱 (1초 단위 근사값)
+        skill.resetCooldown()                      // 즉시 초기화
+    }
 ```
 
 ---
@@ -192,10 +262,10 @@ val players: List<Player> = service.getAbilityPlayers(FireAbility::class)
 
 ```kotlin
 // PvP 비활성화 구간 (로비, 게임 종료 후 등)
-AbilityPlugin.service.damageGuard = true
+AbilityAPI.service.damageGuard = true
 
 // PvP 활성화 (게임 시작)
-AbilityPlugin.service.damageGuard = false
+AbilityAPI.service.damageGuard = false
 ```
 
 **주의:** `damageGuard`는 Bukkit 이벤트 자체를 취소하지 않습니다. 스킬의 핸들러에만 전달을 막는 것이므로, 다른 플러그인의 데미지 이벤트 처리에는 영향을 주지 않습니다.
@@ -207,7 +277,7 @@ AbilityPlugin.service.damageGuard = false
 침묵 상태의 플레이어는 `ActiveSkill`, `ActiveContinueSkill`, `StackableActiveSkill`의 `activate()` 호출 시 `onSilenceAttempt()`만 호출되고 실제 발동되지 않습니다.
 
 ```kotlin
-val service = AbilityPlugin.service
+val service = AbilityAPI.service
 
 // durationTicks 동안 침묵 (20 ticks = 1초)
 // 이미 침묵 중이면 타이머를 새 값으로 교체 (연장 또는 단축)
@@ -234,7 +304,8 @@ class MyGameListener : Listener {
     @EventHandler
     fun onAbilityGive(e: AbilityGiveEvent) {
         // 능력 부여 시 — UI 업데이트, 로그 등
-        e.player.sendTitle(e.ability.javaClass.getAnnotation(AbilityMeta::class.java).name, "", 10, 40, 10)
+        val meta = e.ability.javaClass.getAnnotation(AbilityMeta::class.java)
+        e.player.sendTitle(meta.name, "", 10, 40, 10)
     }
 
     @EventHandler
@@ -257,7 +328,7 @@ class MyGameListener : Listener {
 미니게임의 전형적인 게임 사이클 구현 예시입니다.
 
 ```kotlin
-import io.github.kdy05.abilityAPI.AbilityPlugin
+import io.github.kdy05.abilityAPI.AbilityAPI
 import io.github.kdy05.abilityAPI.ability.AbilityMeta
 import io.github.kdy05.abilityAPI.event.AbilityGiveEvent
 import org.bukkit.entity.Player
@@ -267,10 +338,10 @@ import org.bukkit.plugin.java.JavaPlugin
 
 class MyGame : JavaPlugin(), Listener {
 
-    private val service get() = AbilityPlugin.service
+    private val service get() = AbilityAPI.service
 
     override fun onEnable() {
-        service.registrar.register(FireAbility::class, IceAbility::class)
+        service.registrar.register(FireAbility::class.java, IceAbility::class.java)
         server.pluginManager.registerEvents(this, this)
     }
 
@@ -278,7 +349,7 @@ class MyGame : JavaPlugin(), Listener {
     fun startVotePhase(players: List<Player>) {
         val preview = service.previewAbilities(players)
         preview.forEach { (player, type) ->
-            val meta = type.java.getAnnotation(AbilityMeta::class.java)
+            val meta = type.getAnnotation(AbilityMeta::class.java)
             player.sendMessage("배정 예정 능력: ${meta.name} [${meta.rank}등급]")
         }
     }
@@ -286,7 +357,7 @@ class MyGame : JavaPlugin(), Listener {
     // 2단계: 능력 재배정 요청 처리
     fun onReassignRequest(player: Player) {
         val newType = service.reassignAbility(player)
-        val meta = newType.java.getAnnotation(AbilityMeta::class.java)
+        val meta = newType.getAnnotation(AbilityMeta::class.java)
         player.sendMessage("새 능력: ${meta.name}")
     }
 

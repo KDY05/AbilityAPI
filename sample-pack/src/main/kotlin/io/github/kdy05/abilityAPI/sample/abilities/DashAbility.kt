@@ -34,5 +34,5 @@ class DashAbility(owner: Player, context: SkillContext) : SimpleAbility(owner, c
         }
     }
 
-    override fun skills(): List<Skill> = listOf(dashSkill)
+    override fun buildSkills(): List<Skill> = listOf(dashSkill)
 }

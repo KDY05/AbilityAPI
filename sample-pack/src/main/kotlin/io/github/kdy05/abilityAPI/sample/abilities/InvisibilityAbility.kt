@@ -40,5 +40,5 @@ class InvisibilityAbility(owner: Player, context: SkillContext) : SimpleAbility(
         }
     }
 
-    override fun skills(): List<Skill> = listOf(invisSkill)
+    override fun buildSkills(): List<Skill> = listOf(invisSkill)
 }

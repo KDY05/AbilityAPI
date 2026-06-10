@@ -15,6 +15,8 @@ abstract class ActiveSkill(
 
     abstract fun onActivate()
 
+    open fun onPostActivate() {}
+
     open fun onSilenceAttempt() {}
     open fun onCooldownAttempt(remainingSeconds: Int) {}
     open fun onCooldownEnd() {}
@@ -31,6 +33,7 @@ abstract class ActiveSkill(
         if (context.callEvent(SkillActivateEvent(owner, this)).isCancelled) return
         state = State.COOLDOWN
         onActivate()
+        onPostActivate()
         beginCooldown {
             state = State.READY
             onCooldownEnd()

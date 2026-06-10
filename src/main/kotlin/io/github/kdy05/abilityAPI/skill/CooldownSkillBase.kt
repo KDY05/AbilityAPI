@@ -16,8 +16,10 @@ abstract class CooldownSkillBase(
 
     private var cooldownToken: Any? = null
     private var cooldownRunningToken: Any? = null
+    protected var pendingOnEnd: (() -> Unit)? = null
 
     protected fun beginCooldown(onEnd: () -> Unit) {
+        pendingOnEnd = onEnd
         cooldownSecondsLeft = (cooldownTicks / 20L).toInt()
         cooldownRunningToken = context.scheduleRepeat(20L) {
             if (cooldownSecondsLeft > 0) onCooldownRunning(cooldownSecondsLeft--)
@@ -25,7 +27,9 @@ abstract class CooldownSkillBase(
         cooldownToken = context.scheduleOnce(cooldownTicks) {
             cooldownRunningToken?.let { context.cancelSchedule(it) }
             cooldownRunningToken = null
-            onEnd()
+            val cb = pendingOnEnd
+            pendingOnEnd = null
+            cb?.invoke()
         }
     }
 
@@ -35,4 +39,14 @@ abstract class CooldownSkillBase(
         cooldownToken = null
         cooldownRunningToken = null
     }
+
+    open fun resetCooldown() {
+        cancelCooldownTimers()
+        cooldownSecondsLeft = 0
+        val cb = pendingOnEnd
+        pendingOnEnd = null
+        cb?.invoke()
+    }
+
+    fun getRemainingTicks(): Long = cooldownSecondsLeft * 20L
 }

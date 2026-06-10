@@ -18,6 +18,8 @@ abstract class ActiveContinueSkill(
     abstract fun onActivate()
     abstract fun onDeactivate()
 
+    open fun onPostActivate() {}
+
     open fun onSilenceAttempt() {}
     open fun onActiveAttempt(remainingSeconds: Int) {}
     open fun onActiveRunning(remainingSeconds: Int) {}
@@ -42,6 +44,7 @@ abstract class ActiveContinueSkill(
                 state = State.ACTIVE
                 activeSecondsLeft = (durationTicks / 20L).toInt()
                 onActivate()
+                onPostActivate()
                 activeRunningToken = context.scheduleRepeat(20L) {
                     if (activeSecondsLeft > 0) onActiveRunning(activeSecondsLeft--)
                 }
@@ -79,6 +82,17 @@ abstract class ActiveContinueSkill(
         cancelCooldownTimers()
         if (state == State.ACTIVE) onDeactivate()
         unsubscribeAll()
+        state = State.READY
+    }
+
+    override fun resetCooldown() {
+        durationToken?.let { context.cancelSchedule(it) }
+        activeRunningToken?.let { context.cancelSchedule(it) }
+        durationToken = null
+        activeRunningToken = null
+        activeSecondsLeft = 0
+        if (state == State.ACTIVE) onDeactivate()
+        super.resetCooldown()
         state = State.READY
     }
 }

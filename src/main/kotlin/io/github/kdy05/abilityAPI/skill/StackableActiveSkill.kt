@@ -12,6 +12,8 @@ abstract class StackableActiveSkill(
 
     abstract fun onActivate()
 
+    open fun onPostActivate() {}
+
     open fun onSilenceAttempt() {}
     open fun onStackEmptyAttempt() {}
     open fun onStackGained(currentStacks: Int) {}
@@ -40,6 +42,7 @@ abstract class StackableActiveSkill(
         val wasAtMax = stacks == maxStacks
         stacks--
         onActivate()
+        onPostActivate()
         if (wasAtMax) startRecharge()
     }
 
@@ -58,5 +61,11 @@ abstract class StackableActiveSkill(
         cancelCooldownTimers()
         unsubscribeAll()
         stacks = 0
+    }
+
+    override fun resetCooldown() {
+        cancelCooldownTimers()
+        pendingOnEnd = null
+        stacks = maxStacks
     }
 }

@@ -34,5 +34,5 @@ class BlockBombAbility(owner: Player, context: SkillContext) : SimpleAbility(own
         }
     }
 
-    override fun skills(): List<Skill> = listOf(bombSkill)
+    override fun buildSkills(): List<Skill> = listOf(bombSkill)
 }

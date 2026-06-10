@@ -8,9 +8,13 @@ abstract class Ability(
     val owner: Player,
     protected val context: SkillContext,
 ) {
-    abstract fun skills(): List<Skill>
+    private val _skills: List<Skill> by lazy { buildSkills() }
 
-    fun start()             = skills().forEach { it.onStart() }
-    fun startWithCooldown() = skills().forEach { it.onStartWithCooldown() }
-    fun stop()              = skills().forEach { it.onStop() }
+    protected abstract fun buildSkills(): List<Skill>
+
+    fun skills(): List<Skill> = _skills
+
+    fun start()             = _skills.forEach { it.onStart() }
+    fun startWithCooldown() = _skills.forEach { it.onStartWithCooldown() }
+    fun stop()              = _skills.forEach { it.onStop() }
 }

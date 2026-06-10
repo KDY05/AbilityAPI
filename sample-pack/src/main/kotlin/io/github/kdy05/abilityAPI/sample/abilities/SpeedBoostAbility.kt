@@ -33,5 +33,5 @@ class SpeedBoostAbility(owner: Player, context: SkillContext) : SimpleAbility(ow
         }
     }
 
-    override fun skills(): List<Skill> = listOf(speedSkill)
+    override fun buildSkills(): List<Skill> = listOf(speedSkill)
 }

@@ -32,5 +32,5 @@ class StackTestAbility(owner: Player, context: SkillContext) : SimpleAbility(own
         }
     }
 
-    override fun skills(): List<Skill> = listOf(stackSkill)
+    override fun buildSkills(): List<Skill> = listOf(stackSkill)
 }

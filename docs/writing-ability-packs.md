@@ -161,6 +161,16 @@ private val myActive = object : ActiveSkill(owner, context) {
 }
 ```
 
+`ActiveSkill`은 `CooldownSkillBase`를 상속하므로 쿨타임 제어 메서드를 사용할 수 있습니다.
+
+```kotlin
+// 쿨타임을 즉시 0으로 초기화 — onCooldownEnd()가 호출되고 READY 상태로 전환
+mySkill.resetCooldown()
+
+// 남은 쿨타임(틱 단위) 조회 — 1초 단위 근사값 (최대 20틱 오차)
+val ticks: Long = mySkill.getRemainingTicks()
+```
+
 ### ActiveContinueSkill
 
 발동 → 지속 → 쿨다운 순서로 진행하는 스킬.
@@ -328,7 +338,6 @@ context.isSilenced(owner)
 // src/main/kotlin/com/example/mypack/MyAbilityProvider.kt
 import io.github.kdy05.abilityAPI.AbilityProvider
 import io.github.kdy05.abilityAPI.ability.Ability
-import kotlin.reflect.KClass
 
 class MyAbilityProvider : AbilityProvider {
 
@@ -336,12 +345,20 @@ class MyAbilityProvider : AbilityProvider {
     override fun namespace(): String = "mypack"
 
     // 이 팩이 제공하는 모든 Ability 클래스 목록
-    override fun provide(): List<KClass<out Ability>> = listOf(
-        MyAbility::class,
-        AnotherAbility::class,
+    override fun provide(): List<Class<out Ability>> = listOf(
+        MyAbility::class.java,
+        AnotherAbility::class.java,
     )
 }
 ```
+
+> **Java 호환성:** `provide()`가 `Class<out Ability>`를 반환하므로 Java에서도 자연스럽게 구현할 수 있습니다.
+>
+> ```java
+> public List<Class<? extends Ability>> provide() {
+>     return List.of(MyAbility.class, AnotherAbility.class);
+> }
+> ```
 
 ### 2. ServiceLoader 등록
 
