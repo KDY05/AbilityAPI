@@ -59,7 +59,7 @@ class MyGame : JavaPlugin() {
 }
 ```
 
-`depend` 없이 호출하면 `IllegalStateException("AbilityAPI is not Initialized yet.")` 발생.
+`depend` 없이 호출하면 `IllegalStateException("AbilityAPI is not initialized yet.")` 발생.
 
 ---
 

@@ -70,8 +70,8 @@ class MyAbility(owner: Player, context: SkillContext) : Ability(owner, context) 
         override fun register() { /* 이벤트 구독 */ }
     }
 
-    // 반드시 구현 — 이 능력이 소유하는 모든 스킬을 반환
-    override fun skills(): List<Skill> = listOf(mySkill)
+    // 반드시 구현 — 이 능력이 소유하는 모든 스킬을 반환 (lazy 초기화됨)
+    override fun buildSkills(): List<Skill> = listOf(mySkill)
 }
 ```
 
@@ -145,6 +145,9 @@ private val myActive = object : ActiveSkill(owner, context) {
         owner.sendMessage("스킬 발동!")
     }
 
+    // onActivate() 직후, 쿨다운 시작 전 호출
+    override fun onPostActivate() {}
+
     // COOLDOWN 상태에서 activate() 시도 시
     override fun onCooldownAttempt(remainingSeconds: Int) {
         owner.sendMessage("쿨다운 중: ${remainingSeconds}초 남음")
@@ -201,6 +204,9 @@ private val myContinue = object : ActiveContinueSkill(owner, context) {
         owner.addPotionEffect(PotionEffect(PotionEffectType.SPEED, durationTicks.toInt() + 5, 1))
     }
 
+    // onActivate() 직후 호출
+    override fun onPostActivate() {}
+
     // ACTIVE → COOLDOWN 전환 시 (효과 정리)
     override fun onDeactivate() {
         owner.removePotionEffect(PotionEffectType.SPEED)
@@ -233,7 +239,7 @@ private val myContinue = object : ActiveContinueSkill(owner, context) {
 
 스택을 쌓아 사용하는 스킬. 스택이 0이면 발동 불가. 스택 소모 후 `cooldownTicks`마다 1스택씩 충전.
 
-**동작:** 시작 시 `stacks = maxStacks`. 발동 시 `stacks--`. `stacks`가 최대에서 0으로 된 시점부터 충전 타이머 시작.
+**동작:** 시작 시 `stacks = maxStacks`. 발동 시 `stacks--`. `stacks == maxStacks`인 상태에서 처음 소모하는 시점부터 충전 타이머 시작. 이후 `cooldownTicks`마다 1스택씩 자동 충전하며, `maxStacks`에 도달하면 충전 중단.
 
 ```kotlin
 import io.github.kdy05.abilityAPI.skill.StackableActiveSkill
@@ -256,6 +262,9 @@ private val myStackable = object : StackableActiveSkill(owner, context) {
     override fun onActivate() {
         owner.sendMessage("스택 사용! 남은 스택: $stacks/$maxStacks")
     }
+
+    // onActivate() 직후 호출
+    override fun onPostActivate() {}
 
     // stacks == 0 상태에서 activate() 시도 시
     override fun onStackEmptyAttempt() {

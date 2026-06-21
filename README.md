@@ -2,7 +2,7 @@
 
 An ability & skill management library for Minecraft Paper/Spigot plugins.
 
-> This repository contains only the public API. The core implementation plugin will be released separately at a later date.
+> This repository contains only the public API. The core implementation plugin is available for purchase on [Discord Server](https://discord.gg/G3uRK54KtT).
 
 ## Platform
 
