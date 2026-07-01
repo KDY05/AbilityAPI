@@ -12,6 +12,7 @@ An ability pack is a JAR file that the AbilityAPI plugin loads at runtime from i
   - [ActiveContinueSkill](#activecontinueskill)
   - [StackableActiveSkill](#stackableactiveskill)
 - [SkillBase Helpers](#skillbase-helpers)
+  - [PassiveSkill과 침묵](#passiveskill과-침묵)
 - [SkillContext](#skillcontext)
 - [Registering the Pack](#registering-the-pack)
 - [Custom Events](#custom-events)
@@ -297,17 +298,28 @@ onLeftClick { event: PlayerInteractEvent -> }
 // PlayerInteractEvent 중 우클릭만 필터링 (owner 플레이어만)
 onRightClick { event: PlayerInteractEvent -> }
 
-// EntityDamageByEntityEvent 중 damager == owner인 것만
+// EntityDamageByEntityEvent 중 damager == owner인 것만 (entity에 의한 공격)
 onEntityDamage { event: EntityDamageByEntityEvent -> }
 
-// EntityDamageByEntityEvent 중 entity == owner인 것만
+// EntityDamageByEntityEvent 중 entity == owner인 것만 (entity에 의해 피해를 받을 때)
 onEntityDamaged { event: EntityDamageByEntityEvent -> }
+
+// EntityDamageEvent 중 entity == owner인 것 — 낙하, 익사, 화재, 폭발 등 모든 피해 원인 포함
+// onEntityDamaged는 EntityDamageByEntityEvent만 잡지만, onDamaged는 모든 피해 유형을 잡음
+onDamaged { event: EntityDamageEvent -> }
+
+// 빠르게 두 번 웅크릴 때 발동 (400ms 이내 두 번째 isSneaking=true 이벤트)
+onSneakTwice { event: PlayerToggleSneakEvent -> }
 
 // 위 헬퍼로 커버되지 않는 이벤트는 on()으로 직접 구독
 on(PlayerMoveEvent::class) { event -> }
 ```
 
-**주의:** `EventBus`는 구독한 클래스와 **정확히 일치하는** 이벤트만 전달합니다. `EntityDamageEvent`를 구독해도 `EntityDamageByEntityEvent`는 수신되지 않습니다. 서브클래스를 직접 구독하세요.
+**주의:** `EntityDamageByEntityEvent`를 구독하면 순수 `EntityDamageEvent`(엔티티가 아닌 피해 원인)는 수신되지 않습니다. 반대로 `EntityDamageEvent`를 구독하면 `EntityDamageByEntityEvent`도 함께 수신됩니다. 엔티티 피해만 처리하려면 서브클래스인 `EntityDamageByEntityEvent`를 직접 구독하세요.
+
+### PassiveSkill과 침묵
+
+`PassiveSkill`은 `silencePlayer()` 또는 `STUNNED` 상태 이상이 적용된 플레이어에 대해 모든 `on()` 핸들러를 자동으로 차단합니다. `ActiveSkill` 계열이 `activate()` 진입 시 침묵을 체크하는 것과 달리, `PassiveSkill`은 이벤트 수신 자체가 막힙니다. 별도로 침묵 여부를 확인할 필요가 없습니다.
 
 ---
 

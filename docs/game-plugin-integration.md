@@ -14,6 +14,7 @@
 - [쿨타임 제어](#쿨타임-제어)
 - [damageGuard](#damageguard)
 - [silencePlayer](#silenceplayer)
+- [상태 이상](#상태-이상)
 - [이벤트 수신](#이벤트-수신)
 - [전체 흐름 예시](#전체-흐름-예시)
 
@@ -274,7 +275,10 @@ AbilityAPI.service.damageGuard = false
 
 ## silencePlayer
 
-침묵 상태의 플레이어는 `ActiveSkill`, `ActiveContinueSkill`, `StackableActiveSkill`의 `activate()` 호출 시 `onSilenceAttempt()`만 호출되고 실제 발동되지 않습니다.
+침묵 상태의 플레이어는 다음 두 가지 효과를 받습니다.
+
+- **액티브 스킬** (`ActiveSkill`, `ActiveContinueSkill`, `StackableActiveSkill`): `activate()` 호출 시 `onSilenceAttempt()`만 호출되고 실제 발동되지 않음.
+- **패시브 스킬** (`PassiveSkill`): 이벤트 수신 자체가 차단됨.
 
 ```kotlin
 val service = AbilityAPI.service
@@ -290,7 +294,54 @@ service.unsilencePlayer(player)
 val silenced: Boolean = service.isSilenced(player)
 ```
 
-**용도 예시:** 부활 직후 무적·침묵 구간, 게임 시작 카운트다운, 스턴 효과 구현.
+**용도 예시:** 부활 직후 무적·침묵 구간, 게임 시작 카운트다운.
+
+> 스턴 효과가 필요하다면 침묵을 직접 사용하는 대신 [`STUNNED` 상태 이상](#상태-이상)을 사용하세요. `STUNNED`는 침묵을 포함합니다.
+
+---
+
+## 상태 이상
+
+플레이어에게 지속 시간이 있는 상태 이상을 부여합니다. 구현 플러그인이 각 효과의 집행자(enforcer)를 기본 제공하므로, 게임 플러그인은 `applyEffect`만 호출하면 됩니다.
+
+### 내장 효과
+
+| 상수 | 효과 |
+|---|---|
+| `StatusEffect.HEAL_BLOCKED` | 모든 회복 차단 (`EntityRegainHealthEvent` 취소) |
+| `StatusEffect.ROOTED` | 위치 이동 불가 (시점 전환·상호작용은 허용) |
+| `StatusEffect.STUNNED` | 이동·시점 전환·좌우클릭·스킬 발동 전부 차단 (침묵 포함) |
+
+### API
+
+```kotlin
+val service = AbilityAPI.service
+
+// 효과 부여 (durationTicks 후 자동 해제)
+// 이미 적용 중이면 타이머를 새 값으로 교체
+service.applyEffect(player, StatusEffect.STUNNED, 60L)   // 3초 기절
+
+// 즉시 해제
+service.removeEffect(player, StatusEffect.HEAL_BLOCKED)
+
+// 적용 여부 확인
+val isRooted: Boolean = service.hasEffect(player, StatusEffect.ROOTED)
+```
+
+### 커스텀 효과 등록
+
+기본 제공 효과 외에 게임 플러그인이 직접 정의하는 것도 가능합니다. 집행자는 `SkillContext.(Player) -> Unit` 타입으로, 효과가 부여될 때 한 번 실행되어 이벤트 구독·타이머를 설정하며 효과 만료 시 자동 정리됩니다.
+
+```kotlin
+// onEnable()에서 한 번 등록
+service.registerEffect(StatusEffect.HEAL_BLOCKED) { player ->
+    subscribe(EntityRegainHealthEvent::class) { e ->
+        if (e.entity == player) e.isCancelled = true
+    }
+}
+```
+
+> **주의:** 내장 효과(`HEAL_BLOCKED`, `ROOTED`, `STUNNED`)는 구현 플러그인이 이미 집행자를 등록합니다. 게임 플러그인에서 `registerEffect`로 재등록하면 덮어씌워집니다.
 
 ---
 

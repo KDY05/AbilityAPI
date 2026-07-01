@@ -4,7 +4,9 @@ import org.bukkit.entity.Player
 import org.bukkit.event.Event
 import org.bukkit.event.block.Action
 import org.bukkit.event.entity.EntityDamageByEntityEvent
+import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.event.player.PlayerToggleSneakEvent
 import kotlin.reflect.KClass
 
 abstract class SkillBase(
@@ -14,7 +16,7 @@ abstract class SkillBase(
 
     private val tokens = mutableListOf<Any>()
 
-    protected fun <T : Event> on(eventClass: KClass<T>, handler: (T) -> Unit) {
+    protected open fun <T : Event> on(eventClass: KClass<T>, handler: (T) -> Unit) {
         tokens += context.subscribe(eventClass, handler)
     }
 
@@ -37,6 +39,25 @@ abstract class SkillBase(
         on(EntityDamageByEntityEvent::class) { e ->
             if (e.entity == owner) handler(e)
         }
+
+    fun onDamaged(handler: (EntityDamageEvent) -> Unit) =
+        on(EntityDamageEvent::class) { e ->
+            if (e.entity == owner) handler(e)
+        }
+
+    fun onSneakTwice(handler: (PlayerToggleSneakEvent) -> Unit) {
+        var lastSneakMs = 0L
+        on(PlayerToggleSneakEvent::class) { e ->
+            if (e.player != owner || !e.isSneaking) return@on
+            val now = System.currentTimeMillis()
+            if (now - lastSneakMs <= 400L) {
+                lastSneakMs = 0L
+                handler(e)
+            } else {
+                lastSneakMs = now
+            }
+        }
+    }
 
     abstract fun register()
 

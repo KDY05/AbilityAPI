@@ -23,7 +23,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.github.kdy05:ability-api:0.3.2")
+    compileOnly("io.github.kdy05:ability-api:0.4.0")
 }
 ```
 
@@ -35,7 +35,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'io.github.kdy05:ability-api:0.3.2'
+    compileOnly 'io.github.kdy05:ability-api:0.4.0'
 }
 ```
 
@@ -45,7 +45,7 @@ dependencies {
 <dependency>
     <groupId>io.github.kdy05</groupId>
     <artifactId>ability-api</artifactId>
-    <version>0.3.2</version>
+    <version>0.4.0</version>
     <scope>provided</scope>
 </dependency>
 ```

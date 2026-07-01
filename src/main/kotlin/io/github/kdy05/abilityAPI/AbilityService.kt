@@ -1,6 +1,7 @@
 package io.github.kdy05.abilityAPI
 
 import io.github.kdy05.abilityAPI.ability.Ability
+import io.github.kdy05.abilityAPI.skill.SkillContext
 import org.bukkit.entity.Player
 
 interface AbilityService {
@@ -25,4 +26,9 @@ interface AbilityService {
     fun isSilenced(player: Player): Boolean
 
     fun resetAllCooldowns(player: Player)
+
+    fun registerEffect(effect: StatusEffect, enforcer: SkillContext.(Player) -> Unit)
+    fun applyEffect(player: Player, effect: StatusEffect, durationTicks: Long)
+    fun removeEffect(player: Player, effect: StatusEffect)
+    fun hasEffect(player: Player, effect: StatusEffect): Boolean
 }
